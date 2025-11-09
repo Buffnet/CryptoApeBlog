@@ -5,6 +5,12 @@ import config from '@/payload.config'
 export async function GET() {
   try {
     const payload = await getPayload({ config })
+    const results = {
+      userCreated: false,
+      userExists: false,
+      categoriesCreated: [] as string[],
+      categoriesExisted: [] as string[],
+    }
     
     // Check if test user already exists
     const existingUsers = await payload.find({
@@ -16,35 +22,22 @@ export async function GET() {
       },
     })
     
+    let testUser
     if (existingUsers.docs.length > 0) {
-      // Also check if categories exist
-      const existingCategories = await payload.find({
-        collection: 'categories',
-        limit: 1,
+      testUser = existingUsers.docs[0]
+      results.userExists = true
+    } else {
+      // Create test user
+      testUser = await payload.create({
+        collection: 'users',
+        data: {
+          email: 'test@test.com',
+          password: 'test',
+          name: 'test',
+        },
       })
-      
-      if (existingCategories.docs.length > 0) {
-        return NextResponse.json({ 
-          message: 'Test user and categories already exist',
-          email: 'test@test.com'
-        })
-      }
-      
-      return NextResponse.json({ 
-        message: 'Test user already exists',
-        email: 'test@test.com'
-      })
+      results.userCreated = true
     }
-    
-    // Create test user
-    const testUser = await payload.create({
-      collection: 'users',
-      data: {
-        email: 'test@test.com',
-        password: 'test',
-        name: 'test',
-      },
-    })
     
     // Create sample categories
     const categories = [
@@ -56,38 +49,71 @@ export async function GET() {
     ]
     
     for (const cat of categories) {
-      await payload.create({
+      // Check if category already exists
+      const existingCat = await payload.find({
         collection: 'categories',
-        data: {
-          title: cat.title,
-          slug: cat.slug,
-          content: {
-            root: {
-              children: [{ 
-                children: [{ text: cat.description }], 
-                type: 'paragraph',
-                version: 1,
-                format: '',
-                indent: 0,
-                direction: 'ltr'
-              }],
-              direction: 'ltr',
-              format: '',
-              indent: 0,
-              type: 'root',
-              version: 1,
-            },
+        where: {
+          slug: {
+            equals: cat.slug,
           },
-          owner: testUser.id,
         },
       })
+      
+      if (existingCat.docs.length === 0) {
+        await payload.create({
+          collection: 'categories',
+          data: {
+            title: cat.title,
+            slug: cat.slug,
+            content: {
+              root: {
+                children: [{ 
+                  children: [{ text: cat.description }], 
+                  type: 'paragraph',
+                  version: 1,
+                  format: '',
+                  indent: 0,
+                  direction: 'ltr'
+                }],
+                direction: 'ltr',
+                format: '',
+                indent: 0,
+                type: 'root',
+                version: 1,
+              },
+            },
+            owner: testUser.id,
+          },
+        })
+        results.categoriesCreated.push(cat.title)
+      } else {
+        results.categoriesExisted.push(cat.title)
+      }
+    }
+    
+    // Build response message
+    let message = ''
+    if (results.userCreated) {
+      message += 'Test user created. '
+    } else {
+      message += 'Test user already exists. '
+    }
+    
+    if (results.categoriesCreated.length > 0) {
+      message += `Created ${results.categoriesCreated.length} new categories. `
+    }
+    
+    if (results.categoriesExisted.length > 0) {
+      message += `${results.categoriesExisted.length} categories already existed. `
     }
     
     return NextResponse.json({ 
-      message: 'Test user and categories created successfully',
+      message: message.trim(),
       email: 'test@test.com',
-      password: 'test',
-      categories: categories.map(c => c.title)
+      password: results.userCreated ? 'test' : 'existing user',
+      categoriesCreated: results.categoriesCreated,
+      categoriesExisted: results.categoriesExisted,
+      allCategories: categories.map(c => c.title)
     })
   } catch (error) {
     console.error('Init error:', error)
