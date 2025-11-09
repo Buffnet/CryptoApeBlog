@@ -17,6 +17,19 @@ export async function GET() {
     })
     
     if (existingUsers.docs.length > 0) {
+      // Also check if categories exist
+      const existingCategories = await payload.find({
+        collection: 'categories',
+        limit: 1,
+      })
+      
+      if (existingCategories.docs.length > 0) {
+        return NextResponse.json({ 
+          message: 'Test user and categories already exist',
+          email: 'test@test.com'
+        })
+      }
+      
       return NextResponse.json({ 
         message: 'Test user already exists',
         email: 'test@test.com'
@@ -34,63 +47,47 @@ export async function GET() {
     })
     
     // Create sample categories
-    await payload.create({
-      collection: 'categories',
-      data: {
-        title: 'Technology',
-        slug: 'technology',
-        content: {
-          root: {
-            children: [{ 
-              children: [{ text: 'Technology related posts' }], 
-              type: 'paragraph',
-              version: 1,
-              format: '',
-              indent: 0,
-              direction: 'ltr'
-            }],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            type: 'root',
-            version: 1,
-          },
-        },
-        owner: testUser.id,
-      },
-    })
+    const categories = [
+      { title: 'Technology', slug: 'technology', description: 'Technology related posts' },
+      { title: 'Crypto', slug: 'crypto', description: 'Cryptocurrency and blockchain posts' },
+      { title: 'Web Development', slug: 'web-dev', description: 'Web development tutorials and tips' },
+      { title: 'AI & Machine Learning', slug: 'ai-ml', description: 'Artificial Intelligence and ML topics' },
+      { title: 'Security', slug: 'security', description: 'Cybersecurity and data protection' },
+    ]
     
-    await payload.create({
-      collection: 'categories',
-      data: {
-        title: 'Crypto',
-        slug: 'crypto',
-        content: {
-          root: {
-            children: [{ 
-              children: [{ text: 'Cryptocurrency and blockchain posts' }], 
-              type: 'paragraph',
-              version: 1,
+    for (const cat of categories) {
+      await payload.create({
+        collection: 'categories',
+        data: {
+          title: cat.title,
+          slug: cat.slug,
+          content: {
+            root: {
+              children: [{ 
+                children: [{ text: cat.description }], 
+                type: 'paragraph',
+                version: 1,
+                format: '',
+                indent: 0,
+                direction: 'ltr'
+              }],
+              direction: 'ltr',
               format: '',
               indent: 0,
-              direction: 'ltr'
-            }],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            type: 'root',
-            version: 1,
+              type: 'root',
+              version: 1,
+            },
           },
+          owner: testUser.id,
         },
-        owner: testUser.id,
-      },
-    })
+      })
+    }
     
     return NextResponse.json({ 
       message: 'Test user and categories created successfully',
       email: 'test@test.com',
       password: 'test',
-      categories: ['Technology', 'Crypto']
+      categories: categories.map(c => c.title)
     })
   } catch (error) {
     console.error('Init error:', error)

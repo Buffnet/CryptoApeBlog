@@ -22,6 +22,12 @@ export default function PostForm({ categories }: PostFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    
+    if (formData.categories.length === 0) {
+      setError('Please select at least one category')
+      return
+    }
+    
     setLoading(true)
 
     try {
@@ -101,27 +107,39 @@ export default function PostForm({ categories }: PostFormProps) {
       </div>
 
       <div className="mb-4">
-        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="categories">
+        <label className="block text-gray-700 text-sm font-bold mb-2">
           Categories
         </label>
-        <select
-          id="categories"
-          multiple
-          value={formData.categories}
-          onChange={(e) => {
-            const selected = Array.from(e.target.selectedOptions, option => option.value)
-            setFormData({ ...formData, categories: selected })
-          }}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          required
-        >
+        <div className="border rounded p-3 max-h-40 overflow-y-auto">
           {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.title}
-            </option>
+            <label key={category.id} className="flex items-center space-x-2 mb-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+              <input
+                type="checkbox"
+                value={category.id}
+                checked={formData.categories.includes(category.id)}
+                onChange={(e) => {
+                  const categoryId = e.target.value
+                  if (e.target.checked) {
+                    setFormData({ 
+                      ...formData, 
+                      categories: [...formData.categories, categoryId] 
+                    })
+                  } else {
+                    setFormData({ 
+                      ...formData, 
+                      categories: formData.categories.filter(id => id !== categoryId) 
+                    })
+                  }
+                }}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              />
+              <span className="text-gray-700">{category.title}</span>
+            </label>
           ))}
-        </select>
-        <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
+        </div>
+        {formData.categories.length === 0 && (
+          <p className="text-xs text-red-500 mt-1">Please select at least one category</p>
+        )}
       </div>
 
       <div className="mb-4">
