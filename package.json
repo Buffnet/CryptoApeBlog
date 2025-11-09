@@ -5,10 +5,11 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "payload generate:types && next build",
     "start": "next start",
     "lint": "next lint",
-    "generate:types": "payload generate:types"
+    "generate:types": "payload generate:types",
+    "seed": "tsx src/seed/createTestUser.ts"
   },
   "keywords": [],
   "author": "",
@@ -33,6 +34,7 @@
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.0.1",
     "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.17"
+    "tailwindcss": "^4.1.17",
+    "tsx": "^4.20.6"
   }
 }
